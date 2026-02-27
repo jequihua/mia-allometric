@@ -104,7 +104,7 @@ tables inside SQLite.
 
 ## Workflow
 
-### 1️⃣ Place Raw File
+### 1️ Place Raw File
 
 Put the Excel workbook into:
 
