@@ -1,4 +1,4 @@
-# Allometric Equations SQLite (Mexico) – Mini Project
+# Allometric Equations SQLite (Mexico)
 
 This repository builds a simple, reproducible pipeline (in R) to ingest a curated Excel workbook
 containing forestry allometric equations applied in Mexico (initially volume equations for VRTAcc),
