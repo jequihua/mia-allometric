@@ -1,9 +1,14 @@
 # Allometric Equations SQLite (Mexico)
 
-This repository builds a simple, reproducible pipeline (in R) to ingest a curated Excel workbook
-containing forestry allometric equations applied in Mexico (initially volume equations for VRTAcc),
-clean and standardize key fields, and export a “clean staging” dataset ready to be loaded into an
-SQLite database.
+This repository builds a reproducible R pipeline to ingest, clean, standardize, and store forestry allometric equations applied in Mexico.
+
+The current phase focuses on a structured Excel workbook containing volume equations (VRTAcc). The pipeline:
+
+1. Ingests the workbook robustly  
+2. Cleans and standardizes fields  
+3. Normalizes equation predictor syntax  
+4. Parses applicability ranges  
+5. Builds a relational SQLite database  
 
 The first batch of data was downloaded from:
 
@@ -11,114 +16,61 @@ https://snif.cnf.gob.mx/datos-abiertos/
 
 ---
 
-## Project Goal
+# Project Goal
 
-Create a consistent and auditable dataset of allometric equations (starting with one ordered source),
-keeping strong provenance and preparing for later extension to:
+Create a consistent, auditable, and extensible database of allometric equations, starting with one curated source and later expanding to:
 
 - Multi-source ingestion (Excel, CSV, TXT, scientific publications)
-- Additional response variables (e.g., biomass AGB/BGB, carbon)
+- Additional response variables (AGB, BGB, carbon)
+- Cross-source equation harmonization
+- Structured model parsing
 
 ---
 
-## Current Scope (Phase A: Single Workbook)
+# Current Scope (Phase A – Single Workbook)
 
-This first phase focuses on one Excel file containing:
+This phase processes one Excel file containing:
 
 - `Ecuaciones_asignadas`  
-  Main data table: applied equations by geography and taxon.
-  
-- `NivelesdeAsignación`  
-  Lookup table: definitions for assignment levels 1–8.
-  
-- `Referencias`  
-  Lookup table: maps `Fuente` keys to reference labels.
-  
-- `Notas_técnicas`  
-  Context: equations for VRTAcc; predictors are `diam` (cm) and `alt` (m).
+  Applied equations by geography and taxon.
 
-### Important Technical Note
+- `NivelesdeAsignación`  
+  Assignment level definitions (1–8).
+
+- `Referencias`  
+  Maps `Fuente` keys to bibliographic labels.
+
+- `Notas_técnicas`  
+  Context: equations estimate VRTAcc; predictors are diameter (`diam`, cm) and height (`alt`, m).
+
+---
+
+# Important Technical Details
+
+## Robust Header Reconstruction
 
 The sheet `Ecuaciones_asignadas` contains merged headers created manually in Excel.
 
-The ingestion script **does not rely on automatic column names**.  
-Instead, it:
+The ingestion script:
 
-1. Reads the sheet without headers.
-2. Reconstructs column names using:
+1. Reads the sheet with `col_names = FALSE`
+2. Reconstructs headers using:
    - Row 1 for columns A–H
    - Row 2 for subheaders under “Rangos de aplicabilidad”
-3. Removes the first two rows before cleaning.
+3. Removes the first two rows before cleaning
 
-This ensures reproducibility and avoids fragile Excel header behavior.
-
----
-
-## Key Design Decisions (A1)
-
-In Phase A, we standardize and export a clean staging dataset (CSV) that can later be loaded into SQLite.
-
-### Canonical Fields (Current Workbook)
-
-**Application geography**
-- `estado`
-- `clave_umafor`
-- `cveecon4`
-
-**Taxon**
-- `nombrecientifico_apg_raw` (raw preserved)
-
-**Assignment / provenance**
-- `nivel_asignacion` (1–8)
-- `nivel_asignacion_desc` (joined from `NivelesdeAsignación`)
-- `fuente_clave`
-- `fuente_referencia` (joined from `Referencias`)
-- `clave_ecuacion` (kept as-is)
-
-**Equation**
-- `ecuacion_raw`
-- `ecuacion_normalizada` (standardized predictor tokens)
-- `response_variable` (currently `"VRTAcc_m3"`)
-
-**Applicability ranges**
-- `dbh_range_cm_raw`
-- `height_range_m_raw`
-- `dbh_min_cm`, `dbh_max_cm`
-- `alt_min_m`, `alt_max_m`
-
-### Structural Decision
-
-For Phase A, the dataset remains **wide** (one row per applied equation record),
-because the source is already structured that way.
-
-In later phases (multi-source biomass equations), we may normalize further into:
-
-- `equation`
-- `scope`
-- `source`
-- `parameter`
-
-tables inside SQLite.
+This avoids fragile behavior from Excel header merging and ensures reproducibility.
 
 ---
 
-## Workflow
+# What Was Achieved (Phase A2–A5)
 
-### 1️ Place Raw File
+## A2 – Ingestion and Cleaning
 
-Put the Excel workbook into:
+Script:
 
-data_raw/
+R/01_ingest_excel_A2.R
 
-Do **not** edit the raw file.
-
----
-
-### 2️ Run Ingestion Script
-
-From the repository root:
-
-Rscript R/01_ingest_excel_A2.R data_raw/EcuacionesAsignadas_volumen_vrtacc_2015-2020.xlsx
 
 Outputs:
 
@@ -126,67 +78,231 @@ data_clean/equation_application_clean.csv
 logs/01_ingest_excel_A2.log
 
 
+Features:
+- Robust header reconstruction
+- Automatic detection of lookup columns
+- Joins:
+  - `nivel_asignacion_desc`
+  - `fuente_referencia`
+- Preservation of raw values
+
 ---
 
-### 3️ (Later) Build SQLite
+## A3 – Equation Normalization
 
-A future script will create:
+Each equation is stored twice:
+
+- `ecuacion_raw` (verbatim)
+- `ecuacion_normalizada`
+
+Normalization rules include:
+
+- Diam, Diametro, Diámetro, DN, dap → `diam`
+- Alt, Altura, altura, Ht → `alt`
+- `LN(` → `ln(`
+- `EXP(` → `exp(`
+
+This creates a reusable normalization layer for future multi-source ingestion.
+
+---
+
+## A4 – Range Parsing
+
+Applicability ranges like:
+
+
+7.5-132.5
+
+
+are parsed into numeric fields:
+
+- `dbh_min_cm`
+- `dbh_max_cm`
+- `alt_min_m`
+- `alt_max_m`
+
+Raw range strings are preserved.
+
+---
+
+## A5 – SQLite Database Build
+
+Script:
+
+R/02_build_sqlite_A5.R
+
+
+Creates:
 
 db/allometry.sqlite
 
 
-from the cleaned staging dataset.
+### Database Structure
+
+#### assignment_level
+- nivel_asignacion (PK)
+- nivel_asignacion_desc
+
+#### source_reference
+- fuente_clave (PK)
+- fuente_referencia
+
+#### equation_application
+- equation_application_id (PK)
+- estado
+- clave_umafor
+- cveecon4
+- nombrecientifico_apg_raw
+- nivel_asignacion (FK)
+- clave_ecuacion
+- fuente_clave (FK)
+- ecuacion_raw
+- ecuacion_normalizada
+- dbh_range_cm_raw
+- dbh_min_cm
+- dbh_max_cm
+- height_range_m_raw
+- alt_min_m
+- alt_max_m
+- response_variable
+- parse_status
+- parse_notes
+
+Indexes are created for:
+- Taxon
+- Geography
+- Source
+- Assignment level
+
+The build process:
+- Executes schema statement-by-statement
+- Enforces foreign keys
+- Compacts the database (`VACUUM`)
+- Records metadata in `db_meta`
 
 ---
 
-## Suggested Repository Structure
+# File Size Note
 
-allometria-sqlite-mx/
-README.md
+For ~20,000 rows, the SQLite database is approximately 10 MB.
+
+This is normal because:
+
+- SQLite does not compress text
+- Equation strings are stored per row
+- Indexes add storage overhead
+- Text fields are not dictionary-encoded
+
+For analytical workflows, exporting to Parquet can significantly reduce file size due to columnar compression.
+
+---
+
+# Workflow
+
+## 1) Place Raw File
+
+Put the Excel workbook into:
+
+
 data_raw/
-data_staged/
-data_clean/
-db/
-logs/
-R/
-inst/metadata/
+
+
+Do not edit the raw file.
+
+---
+
+## 2) Run Ingestion
+
+Command line:
+
+
+Rscript R/01_ingest_excel_A2.R data_raw/EcuacionesAsignadas_volumen_vrtacc_2015-2020.xlsx
+
+
+Or from RStudio:
+
+
+source("R/01_ingest_excel_A2.R")
 
 
 ---
 
-## Inputs and Outputs (Current Phase)
+## 3) Build SQLite Database
 
-**Input**
-- Excel workbook (SNIF / CONAFOR open data portal)
+Command line:
 
-**Output**
-- Clean staging CSV with joined lookup information
+
+Rscript R/02_build_sqlite_A5.R
+
+
+Or from RStudio:
+
+
+source("R/02_build_sqlite_A5.R")
+
+
+Output:
+
+
+db/allometry.sqlite
+
 
 ---
 
-## Provenance and Citation
+# Suggested Repository Structure
 
-This project preserves:
+
+mia-allometric/
+├── README.md
+├── data_raw/
+├── data_clean/
+├── db/
+├── logs/
+├── R/
+│ ├── 01_ingest_excel_A2.R
+│ └── 02_build_sqlite_A5.R
+
+
+---
+
+# Provenance and Reproducibility
+
+The project preserves:
 
 - Raw equation strings
-- Source identifiers (`Fuente`)
 - Assignment level definitions
+- Source identifiers
 - Reference labels
 
-When adding additional sources, we will extend provenance tracking to include:
+Future extensions will include:
 
-- File hashes
-- Extraction method
-- Bibliographic metadata
-- License information (when available)
+- File hashing
+- Multi-source ingestion metadata
+- Bibliographic metadata extraction
+- License tracking
 
 ---
 
-## Keywords
+# Future Phases
 
-Manglaria · forestry · allometry · volume equations · sqlite · mexico · SNIF · CONAFOR
+Phase B (planned):
 
-## License
+- Biomass equations (AGB, BGB)
+- Separation of:
+  - equation definition
+  - geographic application scope
+- Structured model parsing
+- Multi-source harmonization
+
+---
+
+# Keywords
+
+Manglaria · forestry · allometry · volume equations · sqlite · Mexico · SNIF · CONAFOR · VRTAcc
+
+---
+
+# License
 
 MIT License
 
