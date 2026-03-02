@@ -196,20 +196,22 @@ R/02_build_sqlite_A5.R
 Creates:
 
 db/allometry.sqlite
-Database Structure
-assignment_level
+
+### Database Structure
+
+#### assignment_level
 
 nivel_asignacion (PK)
 
 nivel_asignacion_desc
 
-source_reference
+#### source_reference
 
 fuente_clave (PK)
 
 fuente_referencia
 
-equation_application
+#### equation_application
 
 equation_application_id (PK)
 
@@ -251,7 +253,7 @@ parse_status
 
 parse_notes
 
-Indexes are created for:
+#### Indexes are created for:
 
 Taxon
 
@@ -261,7 +263,7 @@ Source
 
 Assignment level
 
-The build process:
+#### The build process:
 
 Executes schema statement-by-statement
 
