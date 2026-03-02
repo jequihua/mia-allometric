@@ -107,6 +107,8 @@ normalize_equation_tokens <- function(eq) {
   if (length(eq) == 0) return(eq)
   out <- as.character(eq)
   
+  out <- tolower(out)
+  
   # Normalize spacing
   out <- str_replace_all(out, "\\s+", " ")
   out <- str_squish(out)
@@ -125,6 +127,26 @@ normalize_equation_tokens <- function(eq) {
   # Standardize height token variants to "alt"
   out <- str_replace_all(out, regex("\\bAltura\\b", ignore_case = TRUE), "alt")
   out <- str_replace_all(out, regex("\\bAlt\\b", ignore_case = TRUE), "alt")
+  
+  out
+}
+
+normalize_to_numpy <- function(eq_norm) {
+  out <- tolower(as.character(eq_norm))
+  out <- stringr::str_squish(stringr::str_replace_all(out, "\\s+", " "))
+  
+  # functions
+  out <- stringr::str_replace_all(out, "\\bexp\\s*\\(", "np.exp(")
+  out <- stringr::str_replace_all(out, "\\bln\\s*\\(", "np.log(")
+  
+  # power functions
+  out <- stringr::str_replace_all(out, "\\bpotencia\\s*\\(", "np.power(")
+  out <- stringr::str_replace_all(out, "\\bpow\\s*\\(", "np.power(")
+  
+  # common extras (optional but often useful)
+  out <- stringr::str_replace_all(out, "\\braiz\\s*\\(", "np.sqrt(")
+  out <- stringr::str_replace_all(out, "\\bsqrt\\s*\\(", "np.sqrt(")
+  out <- stringr::str_replace_all(out, "\\babs\\s*\\(", "np.abs(")
   
   out
 }
@@ -324,7 +346,8 @@ eq_clean <- eq10 %>%
   mutate(
     across(where(is.character), ~ str_squish(.x)),
     response_variable = "VRTAcc_m3",
-    ecuacion_normalizada = normalize_equation_tokens(ecuacion_raw)
+    ecuacion_normalizada = normalize_equation_tokens(ecuacion_raw),
+    ecuacion_numpy = normalize_to_numpy(ecuacion_normalizada)
   )
 
 # Parse ranges into numeric min/max
