@@ -320,6 +320,9 @@ Output:
 db/allometry.sqlite
 
 ## Suggested Repository Structure
+
+
+```text
 mia-allometric/
 ├── README.md
 ├── data_raw/
@@ -329,7 +332,8 @@ mia-allometric/
 ├── R/
 │   ├── 01_ingest_excel_A2.R
 │   └── 02_build_sqlite_A5.R
-Provenance and Reproducibility
+```
+
 
 License
 
