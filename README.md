@@ -166,7 +166,10 @@ This allows later evaluation in Python:
 ```python
 import numpy as np
 result = eval(expr, {"np": np}, {"diam": d, "alt": h})
-A4 – Range Parsing
+
+```
+
+## A4 – Range Parsing
 
 Applicability ranges like:
 
@@ -184,7 +187,7 @@ alt_max_m
 
 Raw range strings are preserved for traceability.
 
-A5 – SQLite Database Build
+## A5 – SQLite Database Build
 
 Script:
 
@@ -282,8 +285,8 @@ Indexes add storage overhead
 
 For analytical workflows, exporting to Parquet can significantly reduce file size due to columnar compression.
 
-Workflow
-1) Place Raw File
+## Workflow
+### 1) Place Raw File
 
 Put the Excel workbook into:
 
@@ -291,7 +294,7 @@ data_raw/
 
 Do not edit the raw file.
 
-2) Run Ingestion
+### 2) Run Ingestion
 
 Command line:
 
@@ -313,7 +316,8 @@ source("R/02_build_sqlite_A5.R")
 Output:
 
 db/allometry.sqlite
-Suggested Repository Structure
+
+## Suggested Repository Structure
 mia-allometric/
 ├── README.md
 ├── data_raw/
@@ -324,50 +328,6 @@ mia-allometric/
 │   ├── 01_ingest_excel_A2.R
 │   └── 02_build_sqlite_A5.R
 Provenance and Reproducibility
-
-The project preserves:
-
-Raw equation strings
-
-Assignment level definitions
-
-Source identifiers
-
-Reference labels
-
-Canonical normalized equation syntax
-
-NumPy-ready equation expressions
-
-Future extensions will include:
-
-File hashing
-
-Multi-source ingestion metadata
-
-Bibliographic metadata extraction
-
-License tracking
-
-Future Phases
-
-Phase B (planned):
-
-Biomass equations (AGB, BGB)
-
-Separation of:
-
-equation definition
-
-geographic application scope
-
-Structured model parsing
-
-Multi-source harmonization
-
-Keywords
-
-Manglaria · forestry · allometry · volume equations · sqlite · Mexico · SNIF · CONAFOR · VRTAcc · NumPy
 
 License
 
